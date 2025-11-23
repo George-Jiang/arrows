@@ -68,78 +68,6 @@ Configure Google OAuth token (JSON format) generated from authorized user info.
 
 ## Usage
 
-### Google Sheets
-
-#### Reading from Google Sheets
-
-```python
-from arrows import google_sheets
-
-# Read data from Google Sheet as Arrow format
-arrow = google_sheets.fetch_arrow(
-    spreadsheet_id='your_spreadsheet_id',
-    sheet_name='Sheet1',
-    sheet_range='A1:D100',  # Optional
-    all_varchar=False       # Optional: Treat all columns as VARCHAR
-)
-
-# Convert to Pandas DataFrame
-df = arrow.to_pandas()
-
-# Use SQL query
-arrow = google_sheets.fetch_arrow(
-    spreadsheet_id='your_spreadsheet_id',
-    sheet_name='Sheet1',
-    sql='''
-        SELECT
-            *
-        FROM 
-            self
-        WHERE column1 > 100
-        '''
-)
-```
-
-#### Writing to Google Sheets
-
-```python
-from arrows import google_sheets
-
-# Write Arrow data to Google Sheet
-sheet = google_sheets.arrow_to_googlesheet(
-    arrow=arrow,
-    spreadsheet_id='your_spreadsheet_id',
-    sheet_name='Sheet1'
-)
-```
-
-#### Managing Spreadsheets and Sheets
-
-```python
-from arrows import google_sheets
-
-# Create a new Spreadsheet
-spreadsheet = google_sheets.create_spreadsheet(
-    spreadsheet_name='My Spreadsheet',
-    parent_id='parent_id' # Optional
-)
-
-# Get a Spreadsheet
-spreadsheet = google_sheets.get_spreadsheet('spreadsheet_id')
-
-# Create a new Sheet
-sheet = spreadsheet.create_sheet('New Sheet')
-
-# Get a Sheet
-sheet = spreadsheet.get_sheet('Sheet1')
-
-# Share Spreadsheet
-spreadsheet.share(email='user@example.com', role='writer')
-
-# Delete a Sheet
-spreadsheet.delete_sheet('Sheet1')
-```
-
 ### Amazon Redshift
 
 #### Querying Data
@@ -284,6 +212,89 @@ dataset.delete()
 
 # Clear dataset contents
 dataset.clear_contents()
+```
+
+### Google Sheets
+
+#### Reading from Google Sheets
+
+```python
+from arrows import google_sheets
+
+# Read data from Google Sheet as Arrow format
+arrow = google_sheets.fetch_arrow(
+    spreadsheet_id='your_spreadsheet_id',
+    sheet_name='Sheet1',
+    sheet_range='A1:D100',  # Optional
+    all_varchar=False       # Optional: Treat all columns as VARCHAR
+)
+
+spreadsheet = google_sheets.get_spreadsheet(spreadsheet_id)
+sheet = spreadsheet.get_sheet(sheet_name)
+# or
+sheet = google_sheets.get_sheet(spreadsheet_id, sheet_name)
+
+arrow = sheet.to_arrow(self, sheet_range=None, all_varchar=False, sql=None)
+#or
+df = sheet.to_polars(self, sheet_range=None, all_varchar=False, sql=None)
+#or
+df = sheet.to_pandas(self, sheet_range=None, all_varchar=False, sql=None)
+#or
+duckdb_relation = sheet.to_duckdb(self, sheet_range=None, all_varchar=False, sql=None)
+
+
+# Use SQL query
+arrow = google_sheets.fetch_arrow(
+    spreadsheet_id='your_spreadsheet_id',
+    sheet_name='Sheet1',
+    sql='''
+        SELECT
+            *
+        FROM 
+            self
+        WHERE column1 > 100
+        '''
+)
+```
+
+#### Writing to Google Sheets
+
+```python
+from arrows import google_sheets
+
+# Write Arrow data to Google Sheet
+sheet = google_sheets.arrow_to_googlesheet(
+    arrow=arrow,
+    spreadsheet_id='your_spreadsheet_id',
+    sheet_name='Sheet1'
+)
+```
+
+#### Managing Spreadsheets and Sheets
+
+```python
+from arrows import google_sheets
+
+# Create a new Spreadsheet
+spreadsheet = google_sheets.create_spreadsheet(
+    spreadsheet_name='My Spreadsheet',
+    parent_id='parent_id' # Optional
+)
+
+# Get a Spreadsheet
+spreadsheet = google_sheets.get_spreadsheet('spreadsheet_id')
+
+# Create a new Sheet
+sheet = spreadsheet.create_sheet('New Sheet')
+
+# Get a Sheet
+sheet = spreadsheet.get_sheet('Sheet1')
+
+# Share Spreadsheet
+spreadsheet.share(email='user@example.com', role='writer')
+
+# Delete a Sheet
+spreadsheet.delete_sheet('Sheet1')
 ```
 
 ### Gmail
