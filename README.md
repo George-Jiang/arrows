@@ -371,14 +371,6 @@ sql = render_template(
 - `send_email()` - Send an email
 - `Email` - Class for constructing and sending emails
 
-## Data Format Support
-
-All modules support conversion between the following data formats:
-
-- **Apache Arrow** - Core data format for efficient data transfer
-- **Pandas DataFrame** - Via `arrow.to_pandas()` or `df()` method
-- **Polars DataFrame** - Via `arrow.to_polars()` or `pl()` method
-- **DuckDB Relation** - Via `to_duckdb()` method with SQL query support
 
 ## Notes
 
