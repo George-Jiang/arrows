@@ -1,0 +1,24 @@
+[project]
+name = "arrows"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "adbc-driver-postgresql==1.11.0",
+    "awswrangler>=3.17.1",
+    "duckdb>=1.5.5",
+    "google-api-python-client>=2.200.0",
+    "google-auth>=2.58.0",
+    "jinja2>=3.1.6",
+    "polars>=1.44.2",
+    "psycopg2-binary>=2.9.13",
+    "pyarrow>=25.0.1",
+]
+
+[project.scripts]
+arrows = "arrows:main"
+
+[build-system]
+requires = ["uv_build>=0.12.13,<0.13.0"]
+build-backend = "uv_build"
