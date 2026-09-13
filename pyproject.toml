@@ -3,6 +3,9 @@ name = "arrows"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
+authors = [
+    { name = "George Jiang", email = "huifengjiang@gmail.com" }
+]
 requires-python = ">=3.11"
 dependencies = [
     "adbc-driver-postgresql==1.11.0",
