@@ -94,7 +94,7 @@ class GoogleComponent(Component):
     def health_check(self) -> HealthStatus:
         try:
             profile = self.service('oauth2', 'v2').userinfo().get().execute()
-            return HealthStatus(self.name, True, f"user={profile.get('email', '?')}")
+            return HealthStatus(self.name, True, f'user={profile.get("email", "?")}')
         except Exception as exc:
             return HealthStatus(self.name, False, f'{type(exc).__name__}: {exc}')
 

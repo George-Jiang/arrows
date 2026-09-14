@@ -314,9 +314,7 @@ def login(
     **credentials,
 ) -> Session:
     """Supply credentials and load — see :meth:`Session.login`."""
-    return default_session().login(
-        *names, save=save, include_optional=include_optional, prompt=prompt, **credentials
-    )
+    return default_session().login(*names, save=save, include_optional=include_optional, prompt=prompt, **credentials)
 
 
 def get(name: str) -> Component:

@@ -1,9 +1,9 @@
 """``arrows`` command line: see what exists, and whether it works.
 
-    arrows components            list every registered component
-    arrows doctor s3 redshift    load them and run their health checks
-    arrows secrets redshift      show which required secrets resolve (redacted)
-    arrows login redshift --save type the missing ones, store them in the keychain
+arrows components            list every registered component
+arrows doctor s3 redshift    load them and run their health checks
+arrows secrets redshift      show which required secrets resolve (redacted)
+arrows login redshift --save type the missing ones, store them in the keychain
 """
 
 from __future__ import annotations
@@ -21,9 +21,9 @@ def _cmd_components(args: argparse.Namespace) -> int:
     width = max((len(row['name']) for row in rows), default=4)
     for row in rows:
         marker = '*' if row['loaded'] else ' '
-        depends = f" (needs {', '.join(row['depends_on'])})" if row['depends_on'] else ''
-        hint = f"  [{row['install_hint']}]" if row['install_hint'] else ''
-        print(f"{marker} {row['name']:<{width}}  {row['summary']}{depends}{hint}")
+        depends = f' (needs {", ".join(row["depends_on"])})' if row['depends_on'] else ''
+        hint = f'  [{row["install_hint"]}]' if row['install_hint'] else ''
+        print(f'{marker} {row["name"]:<{width}}  {row["summary"]}{depends}{hint}')
     print('\n* = loaded in this session')
     return 0
 
@@ -36,7 +36,7 @@ def _cmd_doctor(args: argparse.Namespace) -> int:
         try:
             session.load(name)
             status = session.get(name).health_check()
-            print(f"{'ok  ' if status.ok else 'FAIL'}  {name:<14} {status.detail}")
+            print(f'{"ok  " if status.ok else "FAIL"}  {name:<14} {status.detail}')
             exit_code |= 0 if status.ok else 1
         except Exception as exc:
             print(f'FAIL  {name:<14} {type(exc).__name__}: {exc}')
@@ -54,11 +54,11 @@ def _cmd_secrets(args: argparse.Namespace) -> int:
         print(f'{spec.name}:')
         for key in component.requires:
             found = session.secrets.get(key)
-            print(f"  {'ok  ' if found else 'MISS'}  {key:<32} {found.source if found else '-'}")
+            print(f'  {"ok  " if found else "MISS"}  {key:<32} {found.source if found else "-"}')
             exit_code |= 0 if found else 1
         for key in component.optional:
             found = session.secrets.get(key)
-            print(f"  {'ok  ' if found else '--  '}  {key:<32} {(found.source if found else 'optional')}")
+            print(f'  {"ok  " if found else "--  "}  {key:<32} {(found.source if found else "optional")}')
         if not component.requires and not component.optional:
             print('  (no secrets required)')
     return exit_code

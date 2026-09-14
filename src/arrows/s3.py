@@ -116,9 +116,7 @@ class S3Dataset:
 
             pq.write_to_dataset(arrow, self.s3_path)
         else:
-            get_duckdb().execute(
-                f"COPY arrow TO '{self.s3_path[:-1]}' (FORMAT parquet, FILE_SIZE_BYTES '1G')"
-            )
+            get_duckdb().execute(f"COPY arrow TO '{self.s3_path[:-1]}' (FORMAT parquet, FILE_SIZE_BYTES '1G')")
 
     def from_polars(self, df) -> None:
         import polars as pl

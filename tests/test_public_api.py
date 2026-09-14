@@ -32,7 +32,5 @@ def test_list_components_describes_the_builtins():
 
 
 def test_cli_lists_components():
-    output = subprocess.run(
-        [sys.executable, '-m', 'arrows', 'components'], capture_output=True, text=True, check=True
-    )
+    output = subprocess.run([sys.executable, '-m', 'arrows', 'components'], capture_output=True, text=True, check=True)
     assert 'redshift' in output.stdout

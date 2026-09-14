@@ -92,7 +92,13 @@ def _as_list(value) -> list[str]:
     return list(value)
 
 
-def login(token_json: str | None = None, scopes: str | None = None, *, save: bool = False,
-          prompt: bool | None = None, **kwargs):
+def login(
+    token_json: str | None = None,
+    scopes: str | None = None,
+    *,
+    save: bool = False,
+    prompt: bool | None = None,
+    **kwargs,
+):
     """Supply the Google OAuth token and load the gmail component."""
     return _login('gmail', token_json=token_json, scopes=scopes, save=save, prompt=prompt, **kwargs)

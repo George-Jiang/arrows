@@ -58,8 +58,8 @@ Nothing is loaded on import. Ask for what the job needs:
 ```python
 import arrows
 
-arrows.load('s3', 'redshift')       # authenticates both, fails fast if a secret is missing
-arrows.load('gmail')                # pulls in 'google' automatically
+arrows.load('s3', 'redshift')  # authenticates both, fails fast if a secret is missing
+arrows.load('gmail')  # pulls in 'google' automatically
 ```
 
 Loading is how a job states its requirements up front, so a missing credential
@@ -67,7 +67,7 @@ surfaces at start-up instead of an hour into a run. In production, turn off
 implicit loading so that is enforced:
 
 ```python
-arrows.configure(autoload=False)    # or ARROWS_AUTOLOAD=0
+arrows.configure(autoload=False)  # or ARROWS_AUTOLOAD=0
 ```
 
 With `autoload` left on (the default), using a data API loads its component on
@@ -76,10 +76,10 @@ first call, which is what you want in a notebook.
 Other entry points:
 
 ```python
-arrows.list_components()            # names, dependencies, load state
-arrows.health()                     # per-component health checks
-arrows.unload('redshift')           # close connections, drop registered secrets
-arrows.close()                      # release everything
+arrows.list_components()  # names, dependencies, load state
+arrows.health()  # per-component health checks
+arrows.unload('redshift')  # close connections, drop registered secrets
+arrows.close()  # release everything
 ```
 
 `ARROWS_COMPONENTS=s3,redshift` supplies the default set, so `arrows.load()` with
@@ -97,7 +97,7 @@ from arrows.core import Session, SecretStore
 from arrows.core.secrets import AwsSecretsManagerProvider
 
 prod = Session(secrets=SecretStore([AwsSecretsManagerProvider('prod/arrows')]))
-with prod.activate():               # module-level APIs now use this session
+with prod.activate():  # module-level APIs now use this session
     prod.load('redshift')
     arrow = arrows.redshift.fetch_arrow('select 1')
 ```
@@ -110,11 +110,12 @@ reference implementation — and declare what you need:
 ```python
 from arrows.core.component import Component, HealthStatus
 
+
 class ClickhouseComponent(Component):
     name = 'clickhouse'
-    requires = ('CLICKHOUSE_URL', 'CLICKHOUSE_PASSWORD')   # resolved before setup runs
+    requires = ('CLICKHOUSE_URL', 'CLICKHOUSE_PASSWORD')  # resolved before setup runs
     optional = ('CLICKHOUSE_DATABASE',)
-    depends_on = ()                                        # other components
+    depends_on = ()  # other components
 
     def setup(self, secrets):
         # A hint is only needed for a component distributed separately from
@@ -131,6 +132,7 @@ class ClickhouseComponent(Component):
     def close(self):
         self.client.close()
 
+
 COMPONENT = ClickhouseComponent
 ```
 
@@ -145,7 +147,7 @@ clickhouse = "arrows_clickhouse:SPEC"
 ```python
 SPEC = ComponentSpec(
     name='clickhouse',
-    module='arrows_clickhouse.component',   # imported only when the component is loaded
+    module='arrows_clickhouse.component',  # imported only when the component is loaded
     summary='ClickHouse over the native protocol',
     install_hint='pip install arrows-clickhouse',
 )
@@ -199,8 +201,7 @@ Two ways, mixable. **In code**, with named arguments per component:
 ```python
 import arrows
 
-arrows.redshift.login(host='my-cluster...amazonaws.com', database='dev',
-                      user='analyst', password='...')
+arrows.redshift.login(host='my-cluster...amazonaws.com', database='dev', user='analyst', password='...')
 
 arrows.s3.login(profile='analytics', bucket='my-staging-bucket')
 arrows.google_sheets.login(token_json=open('~/token.json').read())
@@ -215,7 +216,7 @@ arrows.login('redshift')
 # REDSHIFT_HOST: ········
 # REDSHIFT_PASSWORD: ········
 
-arrows.redshift.login(user='analyst')   # asks only for host, database, password
+arrows.redshift.login(user='analyst')  # asks only for host, database, password
 ```
 
 The precedence rule differs between the two on purpose:
@@ -241,8 +242,8 @@ To stop retyping on every kernel restart, save to the OS keychain — needs
 `arrows[keyring]`:
 
 ```python
-arrows.redshift.login(password='...', save=True)   # found by KeyringProvider next time
-arrows.login('redshift', save=True)                # same, for prompted answers
+arrows.redshift.login(password='...', save=True)  # found by KeyringProvider next time
+arrows.login('redshift', save=True)  # same, for prompted answers
 ```
 
 Same thing from a terminal: `arrows login redshift --save`.
@@ -254,8 +255,8 @@ nobody will answer. `prompt=False` forces that behaviour, `prompt=True` requires
 a human. So the same call works in both places:
 
 ```python
-arrows.redshift.login(host=..., user=..., password=...)   # script: no prompt, nothing missing
-arrows.redshift.login()                                   # notebook: asks for all of it
+arrows.redshift.login(host=..., user=..., password=...)  # script: no prompt, nothing missing
+arrows.redshift.login()  # notebook: asks for all of it
 ```
 
 A key ending in `_JSON` or `_FILE` accepts a path at the prompt, which is the
@@ -314,23 +315,16 @@ from arrows import redshift
 arrows.load('redshift')
 
 # Query using S3 Unload engine (default, suitable for large data)
-arrow = redshift.fetch_arrow(
-    sql='SELECT * FROM my_table',
-    engine='s3'
-)
+arrow = redshift.fetch_arrow(sql='SELECT * FROM my_table', engine='s3')
 
 # Query using ADBC engine (fast for smaller datasets)
-arrow = redshift.fetch_arrow(
-    sql='SELECT * FROM my_table WHERE date > %(date)s',
-    engine='adbc',
-    date='2024-01-01'
-)
+arrow = redshift.fetch_arrow(sql='SELECT * FROM my_table WHERE date > %(date)s', engine='adbc', date='2024-01-01')
 
 # Get Pandas DataFrame (defaults to ADBC engine)
 df = redshift.fetch_dataframe(
     sql='SELECT * FROM my_table',
     engine='adbc',
-    dtype_backend='numpy'  # or 'pyarrow'
+    dtype_backend='numpy',  # or 'pyarrow'
 )
 ```
 
@@ -343,15 +337,11 @@ from arrows import redshift
 redshift.arrow_to_redshift(
     arrow=arrow,
     table_name='schema.table_name',
-    mode='append'  # or 'overwrite'
+    mode='append',  # or 'overwrite'
 )
 
 # Copy from S3 to Redshift
-redshift.copy(
-    table_name='schema.table_name',
-    s3_path='s3://bucket/path/',
-    mode='append'
-)
+redshift.copy(table_name='schema.table_name', s3_path='s3://bucket/path/', mode='append')
 ```
 
 #### Exporting Data to S3
@@ -360,10 +350,7 @@ redshift.copy(
 from arrows import redshift
 
 # Export Redshift query results to S3
-dataset = redshift.unload(
-    sql='SELECT * FROM my_table',
-    s3_path='s3://bucket/path/'
-)
+dataset = redshift.unload(sql='SELECT * FROM my_table', s3_path='s3://bucket/path/')
 ```
 
 #### Executing SQL
@@ -372,15 +359,10 @@ dataset = redshift.unload(
 from arrows import redshift
 
 # Execute SQL statement
-redshift.execute_sql(
-    sql='CREATE TABLE IF NOT EXISTS my_table (id INT, name VARCHAR)'
-)
+redshift.execute_sql(sql='CREATE TABLE IF NOT EXISTS my_table (id INT, name VARCHAR)')
 
 # Execute SQL file (supports Jinja2 templates)
-redshift.execute_sql_file(
-    sql_script_path='scripts/create_table.sql',
-    table_name='my_table'
-)
+redshift.execute_sql_file(sql_script_path='scripts/create_table.sql', table_name='my_table')
 ```
 
 ### AWS S3
@@ -395,14 +377,11 @@ dataset = s3.arrow_to_s3(
     arrow=arrow,
     s3_path='s3://bucket/path/',
     bucket='my-bucket',  # Optional
-    engine='duckdb'      # or 'pyarrow'
+    engine='duckdb',  # or 'pyarrow'
 )
 
 # Store Polars DataFrame to S3
-dataset = s3.polars_to_s3(
-    df=df,
-    s3_path='s3://bucket/path/'
-)
+dataset = s3.polars_to_s3(df=df, s3_path='s3://bucket/path/')
 
 # Read data from S3
 dataset = s3.get_dataset('s3://bucket/path/')
@@ -443,7 +422,7 @@ dataset.from_redshift(sql='SELECT * FROM my_table')
 dataset.to_redshift('schema.table_name', mode='append')
 
 # Query S3 data with SQL
-result = dataset.query("SELECT * FROM self WHERE id > 100")
+result = dataset.query('SELECT * FROM self WHERE id > 100')
 
 # Delete dataset
 dataset.delete()
@@ -464,7 +443,7 @@ arrow = google_sheets.fetch_arrow(
     spreadsheet_id='your_spreadsheet_id',
     sheet_name='Sheet1',
     sheet_range='A1:D100',  # Optional
-    all_varchar=False       # Optional: Treat all columns as VARCHAR
+    all_varchar=False,  # Optional: Treat all columns as VARCHAR
 )
 
 spreadsheet = google_sheets.get_spreadsheet(spreadsheet_id)
@@ -473,11 +452,11 @@ sheet = spreadsheet.get_sheet(sheet_name)
 sheet = google_sheets.get_sheet(spreadsheet_id, sheet_name)
 
 arrow = sheet.to_arrow(self, sheet_range=None, all_varchar=False, sql=None)
-#or
+# or
 df = sheet.to_polars(self, sheet_range=None, all_varchar=False, sql=None)
-#or
+# or
 df = sheet.to_pandas(self, sheet_range=None, all_varchar=False, sql=None)
-#or
+# or
 duckdb_relation = sheet.to_duckdb(self, sheet_range=None, all_varchar=False, sql=None)
 
 
@@ -485,13 +464,13 @@ duckdb_relation = sheet.to_duckdb(self, sheet_range=None, all_varchar=False, sql
 arrow = google_sheets.fetch_arrow(
     spreadsheet_id='your_spreadsheet_id',
     sheet_name='Sheet1',
-    sql='''
+    sql="""
         SELECT
             *
         FROM 
             self
         WHERE column1 > 100
-        '''
+        """,
 )
 ```
 
@@ -501,11 +480,7 @@ arrow = google_sheets.fetch_arrow(
 from arrows import google_sheets
 
 # Write Arrow data to Google Sheet
-sheet = google_sheets.arrow_to_googlesheet(
-    arrow=arrow,
-    spreadsheet_id='your_spreadsheet_id',
-    sheet_name='Sheet1'
-)
+sheet = google_sheets.arrow_to_googlesheet(arrow=arrow, spreadsheet_id='your_spreadsheet_id', sheet_name='Sheet1')
 ```
 
 #### Managing Spreadsheets and Sheets
@@ -516,7 +491,7 @@ from arrows import google_sheets
 # Create a new Spreadsheet
 spreadsheet = google_sheets.create_spreadsheet(
     spreadsheet_name='My Spreadsheet',
-    parent_id='parent_id' # Optional
+    parent_id='parent_id',  # Optional
 )
 
 # Get a Spreadsheet
@@ -543,19 +518,10 @@ spreadsheet.delete_sheet('Sheet1')
 from arrows import gmail
 
 # Simple email
-gmail.send_email(
-    to=['user@example.com'],
-    subject='Report',
-    content='<h1>Hello</h1>',
-    cc=['manager@example.com']
-)
+gmail.send_email(to=['user@example.com'], subject='Report', content='<h1>Hello</h1>', cc=['manager@example.com'])
 
 # Advanced usage with Email class
-email = gmail.Email(
-    subject='Monthly Report',
-    to=['user@example.com'],
-    sender='Data Team'
-)
+email = gmail.Email(subject='Monthly Report', to=['user@example.com'], sender='Data Team')
 
 # Set content from template
 email.from_template('path/to/template.html', variable='value')
@@ -570,11 +536,7 @@ email.send()
 from arrows.template_renderer import render_template
 
 # Render SQL template
-sql = render_template(
-    'path/to/template.sql',
-    table_name='my_table',
-    date='2024-01-01'
-)
+sql = render_template('path/to/template.sql', table_name='my_table', date='2024-01-01')
 ```
 
 ## Core API

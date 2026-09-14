@@ -127,8 +127,13 @@ def test_friendly_names_map_to_secret_keys(monkeypatch):
     session = Session(secrets=SecretStore([MappingProvider({}, name='empty')]))
     session.login(
         'redshift',
-        host='h', database='dev', user='analyst', password='pw', port='5439',
-        access_key_id='k', secret_access_key='s',
+        host='h',
+        database='dev',
+        user='analyst',
+        password='pw',
+        port='5439',
+        access_key_id='k',
+        secret_access_key='s',
     )
     component = session.get('redshift')
     assert (component.host, component.user, component.port) == ('h', 'analyst', 5439)

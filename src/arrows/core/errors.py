@@ -17,7 +17,7 @@ class ComponentNotFoundError(ArrowsError, KeyError):
     def __init__(self, name: str, available: list[str] | None = None):
         self.name = name
         self.available = sorted(available or [])
-        hint = f" Available components: {', '.join(self.available)}." if self.available else ''
+        hint = f' Available components: {", ".join(self.available)}.' if self.available else ''
         super().__init__(f'Unknown component {name!r}.{hint}')
 
 

@@ -356,8 +356,7 @@ def _warn_if_world_readable(path: Path) -> None:
         import warnings
 
         warnings.warn(
-            f'Credential file {path} is accessible to other users '
-            f'(mode {stat.filemode(mode)}). Run: chmod 600 {path}',
+            f'Credential file {path} is accessible to other users (mode {stat.filemode(mode)}). Run: chmod 600 {path}',
             stacklevel=3,
         )
 
@@ -437,7 +436,9 @@ class SecretStore:
             else:
                 resolved[key] = found
         if missing:
-            raise MissingSecretError(', '.join(missing), component=component, providers=[p.name for p in self.providers])
+            raise MissingSecretError(
+                ', '.join(missing), component=component, providers=[p.name for p in self.providers]
+            )
         return resolved
 
     def has(self, key: str) -> bool:
