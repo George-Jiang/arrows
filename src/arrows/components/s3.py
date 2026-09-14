@@ -17,6 +17,7 @@ class S3Component(Component):
     def __init__(self) -> None:
         super().__init__()
         self._filesystem: Any = None
+        self._filesystem_credentials: tuple[str, str, str | None] | None = None
         self.default_bucket: str | None = None
 
     def setup(self, secrets: SecretStore) -> None:
@@ -26,23 +27,32 @@ class S3Component(Component):
 
     @property
     def filesystem(self) -> Any:
-        """Lazily built :class:`pyarrow.fs.S3FileSystem` bound to the AWS session."""
-        if self._filesystem is None:
-            from pyarrow.fs import S3FileSystem
+        """A :class:`pyarrow.fs.S3FileSystem` holding the current credentials.
 
-            aws = self.session.get('aws')
-            credentials = aws.boto3_session.get_credentials()
-            frozen = credentials.get_frozen_credentials() if credentials else None
-            kwargs: dict[str, Any] = {}
-            if frozen is not None:
-                kwargs = {
-                    'access_key': frozen.access_key,
-                    'secret_key': frozen.secret_key,
-                    'session_token': frozen.token,
-                }
-            if aws.region:
-                kwargs['region'] = aws.region
-            self._filesystem = S3FileSystem(**kwargs)
+        pyarrow copies the keys at construction and never refreshes them, so a
+        filesystem cached for the life of the session stops working an hour into
+        an SSO or instance-role session. Rebuilding it when the credentials
+        change is the fix; constructing one is cheap and opens no connection.
+        """
+        from pyarrow.fs import S3FileSystem
+
+        aws = self.session.get('aws')
+        frozen = aws.frozen_credentials()
+        current = (frozen.access_key, frozen.secret_key, frozen.token) if frozen else None
+        if self._filesystem is not None and current == self._filesystem_credentials:
+            return self._filesystem
+
+        kwargs: dict[str, Any] = {}
+        if frozen is not None:
+            kwargs = {
+                'access_key': frozen.access_key,
+                'secret_key': frozen.secret_key,
+                'session_token': frozen.token,
+            }
+        if aws.region:
+            kwargs['region'] = aws.region
+        self._filesystem = S3FileSystem(**kwargs)
+        self._filesystem_credentials = current
         return self._filesystem
 
     def health_check(self) -> HealthStatus:
@@ -56,6 +66,7 @@ class S3Component(Component):
 
     def close(self) -> None:
         self._filesystem = None
+        self._filesystem_credentials = None
 
 
 COMPONENT = S3Component
