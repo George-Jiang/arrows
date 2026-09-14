@@ -47,6 +47,7 @@ dependencies = [
     "polars>=1.44.2",
     # secret storage for login(save=True)
     "keyring>=25.0",
+    "redshift-connector>=2.1.16",
 ]
 
 [project.urls]
