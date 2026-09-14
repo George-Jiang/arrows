@@ -85,44 +85,6 @@ dependencies = [
     { name = "pyarrow" },
 ]
 
-[package.optional-dependencies]
-all = [
-    { name = "adbc-driver-postgresql" },
-    { name = "awswrangler" },
-    { name = "boto3" },
-    { name = "google-api-python-client" },
-    { name = "google-auth" },
-    { name = "keyring" },
-    { name = "pandas" },
-    { name = "polars" },
-    { name = "psycopg2-binary" },
-]
-aws = [
-    { name = "boto3" },
-]
-google = [
-    { name = "google-api-python-client" },
-    { name = "google-auth" },
-]
-keyring = [
-    { name = "keyring" },
-]
-pandas = [
-    { name = "pandas" },
-]
-polars = [
-    { name = "polars" },
-]
-redshift = [
-    { name = "adbc-driver-postgresql" },
-    { name = "awswrangler" },
-    { name = "boto3" },
-    { name = "psycopg2-binary" },
-]
-s3 = [
-    { name = "boto3" },
-]
-
 [package.dev-dependencies]
 dev = [
     { name = "pytest" },
@@ -133,31 +95,18 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "adbc-driver-postgresql", specifier = "==1.11.0" },
-    { name = "adbc-driver-postgresql", marker = "extra == 'redshift'", specifier = "==1.11.0" },
-    { name = "arrows", extras = ["aws"], marker = "extra == 'redshift'" },
-    { name = "arrows", extras = ["aws"], marker = "extra == 's3'" },
-    { name = "arrows", extras = ["aws", "s3", "redshift", "google", "polars", "pandas", "keyring"], marker = "extra == 'all'" },
     { name = "awswrangler", specifier = ">=3.17.1" },
-    { name = "awswrangler", marker = "extra == 'redshift'", specifier = ">=3.17.1" },
     { name = "boto3", specifier = ">=1.35" },
-    { name = "boto3", marker = "extra == 'aws'", specifier = ">=1.35" },
     { name = "duckdb", specifier = ">=1.5.5" },
     { name = "google-api-python-client", specifier = ">=2.200.0" },
-    { name = "google-api-python-client", marker = "extra == 'google'", specifier = ">=2.200.0" },
     { name = "google-auth", specifier = ">=2.58.0" },
-    { name = "google-auth", marker = "extra == 'google'", specifier = ">=2.58.0" },
     { name = "jinja2", specifier = ">=3.1.6" },
     { name = "keyring", specifier = ">=25.0" },
-    { name = "keyring", marker = "extra == 'keyring'", specifier = ">=25.0" },
     { name = "pandas", specifier = ">=2.2" },
-    { name = "pandas", marker = "extra == 'pandas'", specifier = ">=2.2" },
     { name = "polars", specifier = ">=1.44.2" },
-    { name = "polars", marker = "extra == 'polars'", specifier = ">=1.44.2" },
     { name = "psycopg2-binary", specifier = ">=2.9.13" },
-    { name = "psycopg2-binary", marker = "extra == 'redshift'", specifier = ">=2.9.13" },
     { name = "pyarrow", specifier = ">=25.0.1" },
 ]
-provides-extras = ["aws", "s3", "redshift", "google", "polars", "pandas", "keyring", "all"]
 
 [package.metadata.requires-dev]
 dev = [
