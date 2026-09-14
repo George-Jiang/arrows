@@ -11,3 +11,21 @@ wheels/
 
 # Mac system files
 .DS_Store
+
+# Secrets — never commit credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.json
+token.json
+google_token.json
+*_credentials.json
+*_credentials.txt
+
+# Tooling
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
