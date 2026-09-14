@@ -1,5 +1,6 @@
 import re
 
+
 def _parse_self_sql(sql, old_table, new_table):
     # Step 1: Replace table definitions in FROM and JOIN clauses
     pattern_def = re.compile(

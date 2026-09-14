@@ -1,14 +1,17 @@
-from jinja2 import Template, Environment, FileSystemLoader
 from pathlib import Path
 
+from jinja2 import Environment, FileSystemLoader, Template
 
-class TemplateRenderer():
+
+class TemplateRenderer:
     def __init__(self, scripts_folder_path):
         self.scripts_folder_path = scripts_folder_path
         self.scripts_folder = Path(self.scripts_folder_path)
 
     def render_template(self, filename, **kwargs):
-        env = Environment(loader=FileSystemLoader(self.scripts_folder))
+        # Templates are SQL and email bodies authored by the caller, not untrusted
+        # input, so HTML autoescaping would corrupt them.
+        env = Environment(loader=FileSystemLoader(self.scripts_folder))  # noqa: S701
         template = env.get_template(filename)
         return template.render(**kwargs)
     
