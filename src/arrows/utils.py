@@ -5,7 +5,7 @@ def _parse_self_sql(sql, old_table, new_table):
     # Step 1: Replace table definitions in FROM and JOIN clauses
     pattern_def = re.compile(
         r'\b(FROM|JOIN)(\s+)((?:\w+\.)?\w+(?:\s+(?:AS\s+)?\w+)?(?:\s*,\s*(?:\w+\.)?\w+(?:\s+(?:AS\s+)?\w+)?)*)',
-        re.IGNORECASE | re.MULTILINE
+        re.IGNORECASE | re.MULTILINE,
     )
 
     def replace_definition(match):
@@ -27,11 +27,11 @@ def _parse_self_sql(sql, old_table, new_table):
                 schema, name = '', table_name_part
 
             if name.lower() == old_table.lower():
-                table_name_part = f"{schema + '.' if schema else ''}{new_table}"
+                table_name_part = f'{schema + "." if schema else ""}{new_table}'
 
-            new_tables.append(f"{table_name_part} {alias_part}".rstrip())
+            new_tables.append(f'{table_name_part} {alias_part}'.rstrip())
 
-        return f"{keyword}{whitespace}" + (', '.join(new_tables))
+        return f'{keyword}{whitespace}' + (', '.join(new_tables))
 
     sql = pattern_def.sub(replace_definition, sql)
 

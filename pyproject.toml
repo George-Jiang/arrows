@@ -7,6 +7,20 @@ authors = [
     { name = "George Jiang", email = "huifengjiang@gmail.com" }
 ]
 requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+keywords = ["arrow", "duckdb", "polars", "etl", "s3", "redshift", "data-engineering"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Database",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Typing :: Typed",
+]
 
 # One list, no extras: `pip install arrows` installs every component's
 # dependencies. This is an *install-time* choice only — `import arrows` touches
@@ -18,6 +32,9 @@ dependencies = [
     "jinja2>=3.1.6",
     "pyarrow>=25.0.1",
     # aws, s3, redshift
+    # Pinned exactly on purpose: other releases have broken Redshift. Loosening
+    # this is a deliberate decision, not a cleanup — neighbouring versions have
+    # to be tested against a real cluster first.
     "adbc-driver-postgresql==1.11.0",
     "awswrangler>=3.17.1",
     "boto3>=1.35",
@@ -31,6 +48,12 @@ dependencies = [
     # secret storage for login(save=True)
     "keyring>=25.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/George-Jiang/arrows"
+Repository = "https://github.com/George-Jiang/arrows"
+Issues = "https://github.com/George-Jiang/arrows/issues"
+Changelog = "https://github.com/George-Jiang/arrows/blob/main/CHANGELOG.md"
 
 [dependency-groups]
 dev = [
@@ -50,6 +73,19 @@ arrows = "arrows.cli:main"
 [build-system]
 requires = ["uv_build>=0.12.13,<0.13.0"]
 build-backend = "uv_build"
+
+# The wheel is src/arrows by uv_build's default convention. The sdist also
+# carries the tests and examples, so the package can be checked from source.
+[tool.uv.build-backend]
+source-include = ["tests/**", "examples/**"]
+
+# `uv publish --index testpypi` for the rehearsal; PyPI itself is published to
+# from CI by trusted publishing, never from a laptop.
+[[tool.uv.index]]
+name = "testpypi"
+url = "https://test.pypi.org/simple/"
+publish-url = "https://test.pypi.org/legacy/"
+explicit = true
 
 [tool.ruff]
 line-length = 120

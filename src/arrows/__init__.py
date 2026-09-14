@@ -15,6 +15,8 @@ contributed by other packages through the ``arrows.components`` entry point.
 from __future__ import annotations
 
 import importlib
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as _metadata_version
 from typing import TYPE_CHECKING, Any
 
 # Registering the built-in specs costs nothing: only metadata is imported here.
@@ -44,7 +46,12 @@ from .core.session import (
     use_session,
 )
 
-__version__ = '0.2.0'
+#: pyproject.toml is the single source of truth; read it back from the installed
+#: metadata rather than keeping a second copy here that can drift from the tag.
+try:
+    __version__ = _metadata_version('arrows')
+except PackageNotFoundError:  # running from a source tree that was never installed
+    __version__ = '0.0.0.dev0'
 
 #: Submodules exposed as attributes but imported on first access.
 _LAZY_MODULES = {

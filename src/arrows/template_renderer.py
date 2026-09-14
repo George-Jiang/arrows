@@ -14,8 +14,8 @@ class TemplateRenderer:
         env = Environment(loader=FileSystemLoader(self.scripts_folder))  # noqa: S701
         template = env.get_template(filename)
         return template.render(**kwargs)
-    
-    
+
+
 def render_template(file_path, **kwargs):
     with open(file_path) as file:
         content = Template(file.read()).render(**kwargs)

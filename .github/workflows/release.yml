@@ -1,0 +1,62 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - run: uv lock --check
+      - run: uv sync --locked --all-groups
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run pytest
+
+      # A tag that disagrees with pyproject.toml would publish the wrong
+      # version under the right name, which cannot be undone on PyPI.
+      - name: Tag matches project version
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          project="$(uv version --short)"
+          test "$tag" = "$project" || {
+            echo "tag $tag != pyproject version $project" >&2
+            exit 1
+          }
+
+      - run: uv build
+      - name: Check the built distributions
+        run: uvx twine check dist/*
+
+      # Install the wheel the way a user would: no project, no dev group.
+      - name: Smoke-test the wheel
+        run: |
+          uv run --isolated --no-project --with dist/*.whl \
+            python -c "import arrows; print(arrows.__version__); arrows.list_components()"
+          uvx --from dist/*.whl arrows components
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: pypi          # protect with required reviewers in repo settings
+    permissions:
+      id-token: write          # trusted publishing (OIDC); no API token anywhere
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          attestations: true   # PEP 740 provenance, which `uv publish` cannot emit yet

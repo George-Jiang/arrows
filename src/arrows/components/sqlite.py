@@ -36,8 +36,7 @@ class SqliteComponent(Component):
         path = str(database or self.database)
         if alias not in self._attached:
             get_duckdb().execute(
-                f'INSTALL sqlite; LOAD sqlite; '
-                f'ATTACH IF NOT EXISTS {quote_literal(path)} AS {alias} (TYPE sqlite);'
+                f'INSTALL sqlite; LOAD sqlite; ATTACH IF NOT EXISTS {quote_literal(path)} AS {alias} (TYPE sqlite);'
             )
             self._attached.add(alias)
         return alias

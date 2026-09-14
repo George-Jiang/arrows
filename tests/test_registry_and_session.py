@@ -191,8 +191,11 @@ def test_a_dependencys_missing_library_points_at_the_requested_component():
     registry.register(ComponentSpec(name='absent', module=__name__, attr='NeedsAbsentLibrary'), replace=True)
     registry.register(
         ComponentSpec(
-            name='dependent_on_absent', module=__name__, attr='Dependent',
-            depends_on=('absent',), install_hint='pip install arrows-dependent',
+            name='dependent_on_absent',
+            module=__name__,
+            attr='Dependent',
+            depends_on=('absent',),
+            install_hint='pip install arrows-dependent',
         ),
         replace=True,
     )

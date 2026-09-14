@@ -150,7 +150,7 @@ class AwsComponent(Component):
             return HealthStatus(self.name, False, 'no boto3 session')
         try:
             identity = self.boto3_session.client('sts').get_caller_identity()
-            return HealthStatus(self.name, True, f"arn={identity.get('Arn', '?')}")
+            return HealthStatus(self.name, True, f'arn={identity.get("Arn", "?")}')
         except Exception as exc:
             return HealthStatus(self.name, False, f'{type(exc).__name__}: {exc}')
 
