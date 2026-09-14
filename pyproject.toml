@@ -1,6 +1,6 @@
 [project]
 name = "arrows"
-version = "0.2.0"
+version = "0.2.1"
 description = "Universal data wrangling tool built around Apache Arrow, DuckDB, Polars, S3 for efficiently transferring and transforming data between different data sources with pluggable, independently loadable components"
 readme = "README.md"
 authors = [
