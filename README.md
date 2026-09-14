@@ -577,9 +577,13 @@ sql = render_template('path/to/template.sql', table_name='my_table', date='2024-
 ```bash
 uv sync                      # install with every component
 uv run pytest                # unit tests, no credentials needed
-uv run ruff check src tests  # lint
+uv run ruff check .          # lint
+uv run ruff format .         # format; CI checks this
 uv run arrows doctor         # check real connectivity for what is configured
 ```
+
+Publishing a new version is
+[docs/RELEASING.md](https://github.com/George-Jiang/arrows/blob/main/docs/RELEASING.md).
 
 ## Notes
 
