@@ -6,6 +6,22 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- **S3 reads and writes now use the credentials the `aws` component resolved.**
+  Polars was building a `boto3.Session` of its own, which cannot see anything
+  supplied through `login()`, `.env` or the keychain, so it fell back to the
+  default profile — a working `to_duckdb()` next to a `to_polars()` failing on an
+  expired SSO token. pyarrow had the same problem: `to_arrow()` and `from_arrow()`
+  built a filesystem from their own credential chain instead of the component's.
+- **Credentials are refreshed as they rotate.** The pyarrow filesystem cached a
+  frozen copy for the life of the session, and DuckDB's S3 secret was registered
+  once at load time, so both stopped working an hour into an SSO or
+  instance-role session. Both now follow the current credentials.
+- **`from_polars()` and `polars_to_s3()` worked at all.** They called
+  `pl.PartitionMaxSize`, which no longer exists in the Polars version this
+  package requires; `pl.PartitionBy` replaces it with the same behaviour.
+
 ## [0.2.0] - 2026-09-13
 
 ### Added

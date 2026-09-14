@@ -30,6 +30,20 @@ def _component() -> Any:
     return _get_component('s3')
 
 
+def _aws() -> Any:
+    return _get_component('aws')
+
+
+def _duckdb() -> Any:
+    """The DuckDB connection, with its S3 credentials known to be current.
+
+    Mirrors ``arrows.google_sheets._duckdb``: credentials are refreshed at the
+    moment of use, never handed over once at load time.
+    """
+    _aws().prepare_duckdb()
+    return get_duckdb()
+
+
 def set_default_bucket_name(default_bucket_name: str) -> None:
     """Set the bucket used when a dataset is created without an explicit path."""
     from .core.session import default_session
@@ -89,6 +103,27 @@ class S3Dataset:
         """The pyarrow S3 filesystem owned by the ``s3`` component."""
         return _component().filesystem
 
+    @property
+    def _key(self) -> str:
+        """The path without its scheme.
+
+        pyarrow does not strip ``s3://`` when a filesystem is passed explicitly,
+        so handing it the URI would address a literal key named ``s3:``.
+        """
+        return self.s3_path[5:]
+
+    def _polars_options(self) -> dict[str, Any]:
+        """Credentials for Polars, taken from the ``aws`` component.
+
+        Polars otherwise builds its own ``boto3.Session()``, which cannot see
+        anything supplied through ``login()``, ``.env`` or the keychain.
+        """
+        aws = _aws()
+        return {
+            'credential_provider': aws.credential_provider(),
+            'storage_options': aws.storage_options() or None,
+        }
+
     def __repr__(self) -> str:
         return f'S3Dataset: {self.s3_path}'
 
@@ -97,16 +132,17 @@ class S3Dataset:
         if engine == 'pyarrow':
             import pyarrow.parquet as pq
 
-            return pq.read_table(self.s3_path)
+            return pq.read_table(self._key, filesystem=self.s3)
         return self.to_duckdb().to_arrow_table()
 
     def to_duckdb(self):
-        return get_duckdb().from_parquet(f'{self.s3_path}*.parquet')
+        return _duckdb().from_parquet(f'{self.s3_path}*.parquet')
 
     def to_polars(self, lazy: bool = False):
         import polars as pl
 
-        return pl.scan_parquet(self.s3_path) if lazy else pl.read_parquet(self.s3_path)
+        options = self._polars_options()
+        return pl.scan_parquet(self.s3_path, **options) if lazy else pl.read_parquet(self.s3_path, **options)
 
     # -- write -------------------------------------------------------------
     def from_arrow(self, arrow, engine: str = 'pyarrow') -> None:
@@ -114,19 +150,23 @@ class S3Dataset:
         if engine == 'pyarrow':
             import pyarrow.parquet as pq
 
-            pq.write_to_dataset(arrow, self.s3_path)
+            pq.write_to_dataset(arrow, self._key, filesystem=self.s3)
         else:
-            get_duckdb().execute(f"COPY arrow TO '{self.s3_path[:-1]}' (FORMAT parquet, FILE_SIZE_BYTES '1G')")
+            _duckdb().execute(f"COPY arrow TO '{self.s3_path[:-1]}' (FORMAT parquet, FILE_SIZE_BYTES '1G')")
 
     def from_polars(self, df) -> None:
         import polars as pl
 
         self.clear_contents()
-        partition_info = pl.PartitionMaxSize(base_path=self.s3_path, max_size=512_000)
+        # `PartitionMaxSize` was removed in the Polars version this package
+        # requires; `PartitionBy` without a key is the same thing — one file per
+        # 512k rows — and is what remains.
+        partition_info = pl.PartitionBy(self.s3_path, max_rows_per_file=512_000)
+        options = self._polars_options()
         if isinstance(df, pl.LazyFrame):
-            df.sink_parquet(partition_info)
+            df.sink_parquet(partition_info, **options)
         else:
-            df.write_parquet(partition_info)
+            df.write_parquet(partition_info, **options)
 
     def from_redshift(self, sql: str, **kwargs) -> None:
         from . import redshift
@@ -148,7 +188,7 @@ class S3Dataset:
         source = quote_literal(f'{self.s3_path}*.parquet')
         body = _parse_self_sql(rendered, 'self', 'temp_s3_dataset_table')
         # `source` is a quoted literal; `body` is the caller's own SQL.
-        return get_duckdb().sql(f'WITH temp_s3_dataset_table AS (SELECT * FROM {source})\n{body}')  # noqa: S608
+        return _duckdb().sql(f'WITH temp_s3_dataset_table AS (SELECT * FROM {source})\n{body}')  # noqa: S608
 
     def sql(self, sql: str, **kwargs):
         """Run SQL against a lazily scanned Polars frame of this dataset."""
@@ -156,13 +196,13 @@ class S3Dataset:
 
         df = self.to_polars(lazy=True)  # noqa: F841 - referenced by DuckDB replacement scan
         rendered = _parse_self_sql(Template(sql).render(**kwargs), 'self', 'df')
-        return get_duckdb().sql(rendered)
+        return _duckdb().sql(rendered)
 
     # -- lifecycle ---------------------------------------------------------
     def delete(self) -> None:
         from pyarrow.fs import FileType
 
-        path = self.s3_path[5:]
+        path = self._key
         file_type = self.s3.get_file_info(path).type
         if file_type == FileType.Directory:
             self.s3.delete_dir(path)
@@ -174,7 +214,7 @@ class S3Dataset:
     def clear_contents(self) -> None:
         from pyarrow.fs import FileType
 
-        path = self.s3_path[5:]
+        path = self._key
         if self.s3.get_file_info(path).type == FileType.Directory:
             self.s3.delete_dir_contents(path)
 

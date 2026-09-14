@@ -73,6 +73,7 @@ class AwsComponent(Component):
         self.boto3_session: Any = None
         self.region: str | None = None
         self._explicit_credentials = False
+        self._duckdb_credentials: tuple[str, str, str | None] | None = None
 
     def setup(self, secrets: SecretStore) -> None:
         boto3 = self.import_module('boto3')
@@ -104,6 +105,60 @@ class AwsComponent(Component):
         self.boto3_session = boto3.Session(**kwargs)
         self._register_duckdb_secret()
 
+    # -- credentials -------------------------------------------------------
+    def frozen_credentials(self) -> Any:
+        """The credentials to use *right now*, or ``None`` if there are none.
+
+        Every consumer has to ask for these at the moment of use rather than
+        keeping a copy. botocore hands back a refreshable credential object for
+        SSO, assumed roles and instance profiles, and ``get_frozen_credentials``
+        is what triggers the renewal when the current ones are near expiry. A
+        caller that froze them once is holding keys that stop working an hour
+        later, with no way to notice.
+        """
+        credentials = self.boto3_session.get_credentials() if self.boto3_session else None
+        return credentials.get_frozen_credentials() if credentials else None
+
+    def credential_provider(self):
+        """A Polars credential provider bound to this component's identity.
+
+        Without one, Polars builds a *fresh* ``boto3.Session()`` of its own and
+        resolves credentials from scratch. That session cannot see the arrows
+        SecretStore, so a profile or key supplied through ``login()``, ``.env``
+        or the keychain is invisible to it and it silently falls back to the
+        default profile — which is how a working DuckDB read sits next to a
+        Polars read failing on an expired SSO token.
+        """
+
+        def provider():
+            credentials = self.boto3_session.get_credentials() if self.boto3_session else None
+            if credentials is None:
+                raise RuntimeError('No AWS credentials resolved; cannot read from S3.')
+            # Freeze first: on a deferred credential object the expiry does not
+            # exist until the keys have actually been resolved.
+            frozen = credentials.get_frozen_credentials()
+            values = {'aws_access_key_id': frozen.access_key, 'aws_secret_access_key': frozen.secret_key}
+            if frozen.token is not None:
+                values['aws_session_token'] = frozen.token
+            expiry = getattr(credentials, '_expiry_time', None)
+            return values, int(expiry.timestamp()) if expiry is not None else None
+
+        return provider
+
+    def storage_options(self) -> dict[str, str]:
+        """Non-credential object-store settings for Polars."""
+        return {'aws_region': self.region} if self.region else {}
+
+    # -- duckdb ------------------------------------------------------------
+    def prepare_duckdb(self) -> None:
+        """Make sure DuckDB holds usable credentials before a query runs.
+
+        Cheap and idempotent while nothing has rotated, so callers can put it in
+        front of every S3 read and write.
+        """
+        if self._explicit_credentials:
+            self._register_duckdb_secret()
+
     def _register_duckdb_secret(self) -> None:
         """Give DuckDB the same identity boto3 resolved.
 
@@ -111,36 +166,43 @@ class AwsComponent(Component):
 
         * When boto3 resolved credentials from its own chain (profile, SSO,
           instance role), DuckDB is pointed at that same chain — no key material
-          is written into SQL, and DuckDB refreshes on its own.
+          is written into SQL, and DuckDB refreshes on its own. Registered once.
         * When the credentials came from the arrows SecretStore, DuckDB cannot
           see that store, so the keys have to be handed over as a literal
-          secret. They are then visible in ``duckdb_secrets()``, which is the
-          cost of that setup and a reason to prefer a real AWS profile.
+          secret. Those are a snapshot, so the secret is re-registered whenever
+          the underlying credentials change. They are visible in
+          ``duckdb_secrets()``, which is the cost of that setup and a reason to
+          prefer a real AWS profile.
 
         A failure here is not fatal: boto3 and pyarrow still work.
         """
         import warnings
 
-        credentials = self.boto3_session.get_credentials()
-        if credentials is None:
+        frozen = self.frozen_credentials()
+        if frozen is None:
             warnings.warn('No AWS credentials resolved; DuckDB S3 access is unconfigured.', stacklevel=2)
             return
 
         region = f', REGION {quote_literal(self.region)}' if self.region else ''
         if self._explicit_credentials:
-            frozen = credentials.get_frozen_credentials()
+            current = (frozen.access_key, frozen.secret_key, frozen.token)
+            if current == self._duckdb_credentials:
+                return
             token = f', SESSION_TOKEN {quote_literal(frozen.token)}' if frozen.token else ''
             body = (
                 f'TYPE s3, KEY_ID {quote_literal(frozen.access_key)}, '
                 f'SECRET {quote_literal(frozen.secret_key)}{token}{region}'
             )
         else:
+            current = None
             body = f'TYPE s3, PROVIDER credential_chain{region}'
 
         try:
             get_duckdb().execute(f'CREATE OR REPLACE SECRET arrows_s3 ({body});')
         except Exception as exc:
             warnings.warn(f'Could not register the DuckDB S3 secret: {exc}', stacklevel=2)
+            return
+        self._duckdb_credentials = current
 
     def client(self, service: str, **kwargs) -> Any:
         return self.boto3_session.client(service, **kwargs)
@@ -159,6 +221,7 @@ class AwsComponent(Component):
         with contextlib.suppress(Exception):
             get_duckdb().execute('DROP SECRET IF EXISTS arrows_s3;')
         self.boto3_session = None
+        self._duckdb_credentials = None
 
 
 COMPONENT = AwsComponent
