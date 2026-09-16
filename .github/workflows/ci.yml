@@ -16,7 +16,11 @@ jobs:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v10.1.0
         with:
-          enable-cache: true
+          # Measured, counterintuitive: restoring the 193 MB uv cache takes
+          # ~5.8s to save ~1.2s, because uv downloads the whole dependency set
+          # from PyPI in about two seconds. Must be an explicit false — the
+          # default 'auto' resolves to true for push and pull_request.
+          enable-cache: false
       - run: uv lock --check
       - run: uv sync --locked --all-groups --python ${{ matrix.python-version }}
       - run: uv run ruff check .
