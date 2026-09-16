@@ -11,11 +11,12 @@ jobs:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v10.1.0
         with:
-          # 'auto' turns the cache off for tag pushes, which is all this
-          # workflow runs on. The wheel built below is the one that reaches
-          # PyPI, so a poisoned cache entry would reach users with it; an
-          # uncached release build costs a minute, once per release.
-          enable-cache: auto
+          # Off for the same reason as ci.yml -- restoring the cache costs
+          # more than it saves -- and because the wheel built below is the one
+          # that reaches PyPI, so a poisoned cache entry would reach users.
+          # Not 'auto': its excluded-event list is exhaustive, so adding a
+          # workflow_dispatch trigger here would silently turn caching back on.
+          enable-cache: false
 
       - run: uv lock --check
       - run: uv sync --locked --all-groups
