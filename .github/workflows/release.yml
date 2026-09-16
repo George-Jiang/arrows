@@ -8,10 +8,14 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.1.0
         with:
-          enable-cache: true
+          # 'auto' turns the cache off for tag pushes, which is all this
+          # workflow runs on. The wheel built below is the one that reaches
+          # PyPI, so a poisoned cache entry would reach users with it; an
+          # uncached release build costs a minute, once per release.
+          enable-cache: auto
 
       - run: uv lock --check
       - run: uv sync --locked --all-groups
@@ -41,7 +45,7 @@ jobs:
             python -c "import arrows; print(arrows.__version__); arrows.list_components()"
           uvx --from dist/*.whl arrows components
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dist
           path: dist/
@@ -53,7 +57,7 @@ jobs:
     permissions:
       id-token: write          # trusted publishing (OIDC); no API token anywhere
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: dist
           path: dist/
