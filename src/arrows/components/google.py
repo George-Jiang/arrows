@@ -26,6 +26,26 @@ DEFAULT_SCOPES = (
 )
 
 
+def _resolve_scopes(configured: str | None, token_document: dict[str, Any]) -> list[str]:
+    """Scopes to attach to the credentials, most explicit source first.
+
+    ``GOOGLE_SCOPES`` wins; otherwise the scopes the token was actually minted
+    with are used. Falling back to ``DEFAULT_SCOPES`` for a token that was
+    granted something narrower is what produces the confusing scope mismatches,
+    so it is the last resort only.
+    """
+    if configured:
+        scopes = [scope.strip() for scope in configured.split(',') if scope.strip()]
+        if scopes:
+            return scopes
+    granted = token_document.get('scopes')
+    if isinstance(granted, str):
+        granted = granted.split()
+    if granted:
+        return [str(scope) for scope in granted]
+    return list(DEFAULT_SCOPES)
+
+
 class GoogleComponent(Component):
     """Holds refreshable Google OAuth credentials and builds API services."""
 
@@ -43,10 +63,9 @@ class GoogleComponent(Component):
     def setup(self, secrets: SecretStore) -> None:
         google_credentials = self.import_module('google.oauth2.credentials')
         token_document = json.loads(self.require_secret('GOOGLE_TOKEN_JSON'))
-        scopes = self.secret('GOOGLE_SCOPES')
         self._credentials = google_credentials.Credentials.from_authorized_user_info(
             token_document,
-            scopes=scopes.split(',') if scopes else list(DEFAULT_SCOPES),
+            scopes=_resolve_scopes(self.secret('GOOGLE_SCOPES'), token_document),
         )
 
     # -- credentials -------------------------------------------------------
