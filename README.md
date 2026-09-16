@@ -277,7 +277,7 @@ arrows.login('google')
 | `google` | `GOOGLE_TOKEN_JSON` | `GOOGLE_SCOPES` |
 | `sqlite` | – | `SQLITE_DATABASE` |
 
-Two credentials deserve a note:
+Three credentials deserve a note:
 
 - **AWS**: prefer *no* credentials in arrows at all. With nothing configured,
   boto3 resolves its own chain — `AWS_PROFILE`, SSO, EC2/ECS/EKS instance roles —
@@ -287,6 +287,10 @@ Two credentials deserve a note:
 - **Redshift**: set `REDSHIFT_CLUSTER_IDENTIFIER` and omit `REDSHIFT_PASSWORD`.
   arrows then mints a short-lived password through `redshift:GetClusterCredentials`
   using the AWS identity already loaded, so no database password exists on disk.
+- **Google**: `GOOGLE_SCOPES` (comma-separated) wins when it is set. Otherwise the
+  scopes recorded inside `GOOGLE_TOKEN_JSON` are used, and the built-in defaults
+  apply only to a token document that lists none — claiming scopes the token was
+  never granted is what produces confusing scope errors at call time.
 
 ### Migrating from `load_credentials()`
 
